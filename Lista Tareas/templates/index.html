@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Tareas Pendientes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .task-form, .task-list {
+            margin-top: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .completed {
+            text-decoration: line-through;
+        }
+        button {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestión de Tareas Pendientes</h1>
+    <div class="task-form">
+        <form id="task-form">
+            <input type="text" id="task-input" placeholder="Nueva tarea" required>
+            <button type="submit">Agregar Tarea</button>
+        </form>
+    </div>
+    <div class="task-list">
+        <h2>Lista de Tareas</h2>
+        <div id="task-list"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchTasks();
+
+            document.getElementById("task-form").addEventListener("submit", function(event) {
+                event.preventDefault();
+                const taskInput = document.getElementById("task-input");
+                const taskDescription = taskInput.value;
+                taskInput.value = '';
+                addTask(taskDescription);
+            });
+        });
+
+        function fetchTasks() {
+            fetch('/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    const taskList = document.getElementById("task-list");
+                    taskList.innerHTML = '';
+                    data.tasks.forEach((task, index) => {
+                        const taskDiv = document.createElement("div");
+                        taskDiv.className = 'task';
+                        if (task.completada) taskDiv.classList.add('completed');
+                        taskDiv.innerHTML = `
+                            <span>${task.descripcion}</span>
+                            <div>
+                                <button onclick="completeTask(${index})">Completar</button>
+                                <button onclick="deleteTask(${index})">Eliminar</button>
+                            </div>
+                        `;
+                        taskList.appendChild(taskDiv);
+                    });
+                });
+        }
+
+        function addTask(description) {
+            fetch('/add_task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ descripcion: description })
+            }).then(() => fetchTasks());
+        }
+
+        function completeTask(index) {
+            fetch(`/complete_task/${index}`, {
+                method: 'POST'
+            }).then(() => fetchTasks());
+        }
+
+        function deleteTask(index) {
+            fetch(`/delete_task/${index}`, {
+                method: 'POST'
+            }).then(() => fetchTasks());
+        }
+    </script>
+</body>
+</html>
